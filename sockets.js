@@ -5,7 +5,7 @@ var socket = require('socket.io')
   , db = require('./db')
   , channels = {}
 
-exports.run = function() {
+exports.run = function(app) {
   var io = socket.listen(app);
   io.set('log level', 1); // reduce logging
   db.channels.on('load', function() { // when db is ready
@@ -17,5 +17,5 @@ exports.run = function() {
   });
 }
 
-module.exports = channels;
+exports.channel = channels;
 

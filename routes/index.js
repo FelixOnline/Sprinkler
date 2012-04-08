@@ -1,4 +1,5 @@
-var db = require('../db');
+var db = require('../db')
+  , sockets = require('../sockets')
 
 /*
  * GET home page.
@@ -58,6 +59,7 @@ exports.newmessage = function(req, res) {
       if(!req.body.event) { // if no socket.io event specified
         event = 'message';
       }
+      sockets.channel[req.body.channel].emit(event, req.body.message); // send message
       res.json('Success');
     } else {
       res.json("Channel doesn't exist, sorry!", 409);

@@ -10,3 +10,6 @@ dev.on('connect', function() {
 dev.on('message', function(data) {
   console.log(data);
 });
+dev.on('news', function(data) {
+  console.log('news', data);
+});
