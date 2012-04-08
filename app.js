@@ -4,9 +4,9 @@
 
 var express = require('express')
   , routes = require('./routes')
-  , socket = require('socket.io')
-  , dirty = require('dirty')
   , config = require('./config') // config file
+  , db = require('./db')
+  , sockets = require('./sockets')
 
 var app = module.exports = express.createServer();
 
@@ -26,30 +26,10 @@ app.configure('production', function(){
   app.use(express.errorHandler());
 });
 
-// DB's
-var db = {};
-db.keys = dirty.Dirty('keys.db');
-db.channels = dirty.Dirty('channels.db');
-
 // Routes
 
 app.get('/', routes.index);
-
-// Socket.io
-
-var io = socket.listen(app);
-io.set('log level', 1); // reduce logging
-
-io.sockets.on('connection', function(socket) {
-    if(cache) {
-        socket.emit('datastart', { data: cache });
-    } else {
-        getData(config.url, function(json) {
-            cache = json;
-            socket.emit('datastart', { data: cache });
-        });
-    }
-});
+app.post('/newchannel', routes.newchannel);
 
 app.listen(3000);
 console.log("Express server listening on port %d in %s mode", app.address().port, app.settings.env);
