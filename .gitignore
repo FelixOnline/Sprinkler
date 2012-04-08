@@ -1,0 +1,8 @@
+# node modules
+node_modules/
+
+# db files
+*.db
+
+# config file
+config.js
