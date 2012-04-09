@@ -3,13 +3,13 @@
  */
 var io = require('socket.io-client');
 
-var dev = io.connect('http://localhost:3000/dev');
-dev.on('connect', function() {
+var test = io.connect('http://176.34.227.200:8000/tes');
+test.on('connect', function() {
   console.log('connected');
 });
-dev.on('message', function(data) {
+test.on('message', function(data) {
   console.log(data);
 });
-dev.on('news', function(data) {
+test.on('news', function(data) {
   console.log('news', data);
 });
