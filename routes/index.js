@@ -28,7 +28,7 @@ exports.newchannel = function(req, res) {
       if(db.channels.get(req.body.name)) { // channel already exists
         res.json('Channel already exists, sorry!', 409);
       } else {
-        sockets.add(req.body.name, function() {
+        sockets.add(req.body.name, req.body.key, function() {
           res.json('Success');
         });
       }

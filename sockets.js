@@ -22,11 +22,12 @@ var newChannel = function(channel) {
   });
 }
 
-exports.add = function(channel, callback) {
-    db.channels.set(req.body.name, { created: now.toJSON(), 'created_by': req.body.key }, function() {
-      newChannel(channel);
-      if(typeof(callback) == 'function') callback();
-    });
+exports.add = function(channel, key, callback) {
+  var now = new Date();
+  db.channels.set(channel, { created: now.toJSON(), 'created_by': key }, function() {
+    newChannel(channel);
+    if(typeof(callback) == 'function') callback();
+  });
 }
 
 exports.channel = channels;
