@@ -4,9 +4,10 @@
 var socket = require('socket.io')
   , db = require('./db')
   , channels = {}
+  , io = {}
 
 exports.run = function(app) {
-  var io = socket.listen(app);
+  io = socket.listen(app);
   io.set('log level', 1); // reduce logging
   db.channels.on('load', function() { // when db is ready
     db.channels.forEach(function(key, val) { // loop through each channel
