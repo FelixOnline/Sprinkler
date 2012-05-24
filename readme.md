@@ -22,3 +22,13 @@ Send a message to all clients connected to `test` channel
 
     curl -v -H "Accept: application/json" -H "Content-type: application/json" -X POST -d '{"key":"APIKEY", "channel":"test", "message": {"hello": "world"}}' http://localhost:3000/newmessage
 
+## Setup:
+
+    npm install
+    node app.js
+
+Optional:
+Run the client script to listen to a specific channel or all channels
+
+    node client.js http://localhost:3000 [channel]
+
