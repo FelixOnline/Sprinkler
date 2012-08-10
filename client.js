@@ -19,9 +19,7 @@ if(!url) {
 var addlog = function(socket) {
   var $emit = socket.$emit;
   socket.$emit = function() {
-    if(arguments['0'] == 'message') {
-      console.log(socket.name, Array.prototype.slice.call(arguments));
-    }
+    console.log(socket.name, Array.prototype.slice.call(arguments));
     $emit.apply(socket, arguments);
   };
 }
