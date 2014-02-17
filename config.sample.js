@@ -1,6 +1,6 @@
-var config = {};
-
-config.api = 'API_KEY';
-config.port = 3000;
+var config = {
+    'admin_key': 'API_KEY', // admin key
+    'port': 3000, // default port
+};
 
 module.exports = config;
