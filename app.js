@@ -59,23 +59,6 @@ app.post('/message/:channel', function (req, res) {
             res.json({ 'message': 'Wrong key' }, 401);
         });
     }
-    /*
-  var keys = db.keys;
-  if(keys.get(req.body.key)) { // check key against database
-    if(db.channels.get(req.body.channel)) { // channel exists
-      var event = req.body.event;
-      if(!req.body.event) { // if no socket.io event specified
-        event = 'message';
-      }
-      sockets.channel[req.body.channel].emit(event, req.body.message); // send message
-      res.json('Success');
-    } else {
-      res.json("Channel doesn't exist, sorry!", 409);
-    }
-  } else {
-    res.json('Wrong key', 401);
-  }
-  */
 });
 
 var server = http.createServer(app);
