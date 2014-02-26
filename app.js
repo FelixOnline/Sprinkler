@@ -11,6 +11,7 @@ var redis = require('redis');
 var db = redis.createClient();
 
 var Socket = require('./lib/Socket');
+var utils = require('./utils');
 
 // 1. Check for config file
 var config;
@@ -20,10 +21,6 @@ if (!fs.existsSync('./config.js')) {
 } else {
     config  = require('./config'); // config file
 }
-
-  //, routes = require('./routes')
-  //, db = require('./db')
-  //, sockets = require('./sockets')
 
 // 1. Get sockjs servers
 //var sockjs_opts = {sockjs_url: "http://cdn.sockjs.org/sockjs-0.3.min.js"};
@@ -39,6 +36,48 @@ ping.on('connection', function(conn) {
 
 // 2. Express server
 var app = express();
+
+app.use(express.urlencoded());
+
+// New message
+app.post('/message/:channel', function (req, res) {
+    var key = req.get('key');
+    var channel = req.params.channel;
+    var endpoint = '/' + channel;
+
+    if (!key) {
+        res.json({ 'message': 'No key' }, 401);
+    } else {
+        // Check key
+        utils.authenticate(endpoint, key).then(function() {
+            // post message
+            db.publish(endpoint, req.body.message);
+            res.json({
+                'message': req.body.message
+            }, 200);
+        }, function(error) {
+            res.json({ 'message': 'Wrong key' }, 401);
+        });
+    }
+    /*
+  var keys = db.keys;
+  if(keys.get(req.body.key)) { // check key against database
+    if(db.channels.get(req.body.channel)) { // channel exists
+      var event = req.body.event;
+      if(!req.body.event) { // if no socket.io event specified
+        event = 'message';
+      }
+      sockets.channel[req.body.channel].emit(event, req.body.message); // send message
+      res.json('Success');
+    } else {
+      res.json("Channel doesn't exist, sorry!", 409);
+    }
+  } else {
+    res.json('Wrong key', 401);
+  }
+  */
+});
+
 var server = http.createServer(app);
 
 console.log(' [*] Listening on 0.0.0.0:' + config.port);
@@ -61,10 +100,6 @@ db.lrange('endpoints', 0, -1, function(err, list) {
 });
 
 /*
-
-app.get('/', function (req, res) {
-    res.sendfile(__dirname + '/index.html');
-});
 
 var app = module.exports = express.createServer();
 
