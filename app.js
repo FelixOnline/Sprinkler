@@ -3,9 +3,11 @@
 //
 
 var express = require('express');
-var sockjs  = require('sockjs');
-var http    = require('http');
+var sockjs = require('sockjs');
+var http = require('http');
 var fs = require('fs');
+
+var Socket = require('./lib/Socket');
 
 // 1. Check for config file
 var config;
@@ -20,23 +22,36 @@ if (!fs.existsSync('./config.js')) {
   //, db = require('./db')
   //, sockets = require('./sockets')
 
-// 1. Echo sockjs server
+// 1. Get sockjs servers
 //var sockjs_opts = {sockjs_url: "http://cdn.sockjs.org/sockjs-0.3.min.js"};
+
+var endpoints = [];
+
 var ping = sockjs.createServer({});
 ping.on('connection', function(conn) {
     conn.on('data', function(message) {
         conn.write('pong');
     });
 });
+endpoints.push({
+    prefix: '/ping',
+    socket: ping,
+});
+
+endpoints.push(new Socket('/echo'));
 
 // 2. Express server
 var app = express();
 var server = http.createServer(app);
 
-ping.installHandlers(server, { prefix:'/ping' });
-
 console.log(' [*] Listening on 0.0.0.0:' + config.port);
 server.listen(config.port, '0.0.0.0');
+
+// 3. Create endpoints
+endpoints.forEach(function(sock) {
+    sock.socket.installHandlers(server, { prefix: sock.prefix });
+});
+
 /*
 
 app.get('/', function (req, res) {

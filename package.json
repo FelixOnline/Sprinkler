@@ -8,7 +8,8 @@
     "sockjs": "~0.3.8",
     "rbytes": "~1.0.0",
     "hat": "0.0.3",
-    "express": "~3.4.8"
+    "express": "~3.4.8",
+    "underscore": "~1.6.0"
   },
   "devDependencies": {
     "sockjs-client": "~0.1.3"
