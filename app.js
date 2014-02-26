@@ -37,7 +37,7 @@ ping.on('connection', function(conn) {
 // 2. Express server
 var app = express();
 
-app.use(express.urlencoded());
+app.use(express.json());
 
 // New message
 app.post('/message/:channel', function (req, res) {
@@ -46,17 +46,17 @@ app.post('/message/:channel', function (req, res) {
     var endpoint = '/' + channel;
 
     if (!key) {
-        res.json({ 'message': 'No key' }, 401);
+        res.json({ 'message': 'No key', 'status': 'ERROR' }, 401);
     } else {
         // Check key
         utils.authenticate(endpoint, key).then(function() {
             // post message
-            db.publish(endpoint, req.body.message);
+            db.publish(endpoint, JSON.stringify(req.body));
             res.json({
-                'message': req.body.message
+                'status': 'OK'
             }, 200);
         }, function(error) {
-            res.json({ 'message': 'Wrong key' }, 401);
+            res.json({ 'message': 'Wrong key', 'status': 'ERROR' }, 401);
         });
     }
 });
