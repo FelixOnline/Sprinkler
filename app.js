@@ -144,6 +144,35 @@ app.post('/channel', requireAdmin, function (req, res) {
     });
 });
 
+// Delete channel
+app.delete('/channel/:channel', requireAdmin, function (req, res) {
+    var channel = req.params.channel;
+    var endpoint = '/' + channel;
+
+    // check if channel already exists
+    db.hexists('keys', endpoint, function(err, check) {
+        if (!check) {
+            res.json({ 'message': "Channel doesn't exist", 'status': 'ERROR' }, 400);
+            return false;
+        }
+
+        // remove channel key
+        db.hdel('keys', endpoint, function(err) {
+            // remove channel from channel list
+            db.lrem('endpoints', 0, endpoint, function(err) {
+                // publish removed endpoint
+                // TODO actual remove channel handlers
+                db.publish('removed-endpoint', JSON.stringify({
+                    'endpoint': endpoint
+                }));
+                res.json({
+                    'status': 'OK'
+                }, 200);
+            });
+        });
+    });
+});
+
 var server = http.createServer(app);
 
 console.log(' [*] Listening on 0.0.0.0:' + config.port);
