@@ -7,6 +7,9 @@ var sockjs = require('sockjs');
 var http = require('http');
 var fs = require('fs');
 
+var redis = require('redis');
+var db = redis.createClient();
+
 var Socket = require('./lib/Socket');
 
 // 1. Check for config file
@@ -33,12 +36,6 @@ ping.on('connection', function(conn) {
         conn.write('pong');
     });
 });
-endpoints.push({
-    prefix: '/ping',
-    socket: ping,
-});
-
-endpoints.push(new Socket('/echo'));
 
 // 2. Express server
 var app = express();
@@ -48,8 +45,19 @@ console.log(' [*] Listening on 0.0.0.0:' + config.port);
 server.listen(config.port, '0.0.0.0');
 
 // 3. Create endpoints
-endpoints.forEach(function(sock) {
-    sock.socket.installHandlers(server, { prefix: sock.prefix });
+
+// special case for ping
+ping.installHandlers(server, { prefix: '/ping' });
+
+// Get all endpoints that have been setup
+db.lrange('endpoints', 0, -1, function(err, list) {
+    list.forEach(function(endpoint) {
+        // Get auth key for endpoint
+        db.hget('keys', endpoint, function(err, key) {
+            var sock = new Socket(endpoint, key);
+            sock.socket.installHandlers(server, { prefix: sock.prefix });
+        });
+    });
 });
 
 /*
