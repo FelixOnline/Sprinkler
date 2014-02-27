@@ -11,8 +11,8 @@ var hat = require('hat');
 var redis = require('redis');
 var db = redis.createClient();
 
-var Socket = require('./lib/Socket');
-var utils = require('./utils');
+var Socket = require('./lib/socket');
+var utils = require('./lib/utils');
 
 // 1. Check for config file
 var config;
@@ -23,23 +23,12 @@ if (!fs.existsSync('./config.js')) {
     config  = require('./config'); // config file
 }
 
-// 1. Get sockjs servers
-//var sockjs_opts = {sockjs_url: "http://cdn.sockjs.org/sockjs-0.3.min.js"};
-
-var endpoints = [];
-
-var ping = sockjs.createServer({});
-ping.on('connection', function(conn) {
-    conn.on('data', function(message) {
-        conn.write('pong');
-    });
-});
-
 // 2. Express server
 var app = express();
 
 app.use(express.json());
 
+// Require admin key middleware
 var requireAdmin = function(req, res, next) {
     var key = req.get('key');
 
@@ -179,9 +168,6 @@ console.log(' [*] Listening on 0.0.0.0:' + config.port);
 server.listen(config.port, '0.0.0.0');
 
 // 3. Create endpoints
-
-// special case for ping
-ping.installHandlers(server, { prefix: '/ping' });
 
 // Get all endpoints that have been setup
 db.lrange('endpoints', 0, -1, function(err, list) {
