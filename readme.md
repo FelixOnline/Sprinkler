@@ -1,34 +1,38 @@
-# Sprinkler
+# sprinkler
 
 *A real time messaging platform*
 
-Sprinkler allows the creation of multiple real time channels and the ability to push data through those channels to connected users.
+Sprinkler allows the creation of multiple real time channels and the ability to push data through those channels to all connected users.
 
 ## Requirements:
 * node.js
 
-## Modules:
-* [express](https://github.com/visionmedia/express)
-* [socket.io](https://github.com/learnboost/socket.io)
-* [dirty](https://github.com/felixge/node-dirty)
 
 ## Examples:
 
-Create a new channel `test`
+Create a new channel `test`:
 
-    curl -v -H "Accept: application/json" -H "Content-type: application/json" -X POST -d '{"key":"APIKEY", "name":"test"}' http://localhost:3000/newchannel
+	curl 'http://0.0.0.0:3000/channel' -H 'Content-Type: application/json' -H 'key: ADMIN_KEY' -X POST -d '{"channel": "test"}'
 
-Send a message to all clients connected to `test` channel
+This will return:
+	
+	{
+  		"status": "OK",
+  		"key": "CHANNEL_KEY"
+	}
 
-    curl -v -H "Accept: application/json" -H "Content-type: application/json" -X POST -d '{"key":"APIKEY", "channel":"test", "message": {"hello": "world"}}' http://localhost:3000/newmessage
+You can then use this key to send a message to all clients connected to the `test` channel:
+
+	curl 'http://0.0.0.0:3000/channel' -H 'Content-Type: application/json' -H 'key: CHANNEL_KEY' -X POST -d '{"message": "Hello World"}'
+
+If there are any sockjs clients listening to `http://0.0.0.0:3000` with the prefix `\test` they will recieve the string message:
+
+	{"message": "Hello World"}
+
 
 ## Setup:
 
     npm install
     node app.js
 
-Optional:
-Run the client script to listen to a specific channel or all channels
-
-    node client.js http://localhost:3000 [channel]
-
+Create a `config.js` based on `config.js.sample`
