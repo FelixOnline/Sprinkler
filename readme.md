@@ -1,4 +1,4 @@
-# sprinkler
+# ![image](logo.png) Sprinkler
 
 *A real time messaging platform*
 
