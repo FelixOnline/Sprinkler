@@ -1,43 +1,192 @@
-/**
- * Module dependencies.
- */
+//
+// Sprinkler
+//
 
-var express = require('express')
-  , routes = require('./routes')
-  , config = require('./config') // config file
-  , db = require('./db')
-  , sockets = require('./sockets')
+var express = require('express');
+var sockjs = require('sockjs');
+var http = require('http');
+var fs = require('fs');
+var hat = require('hat');
 
-var app = module.exports = express.createServer();
+var redis = require('redis');
+var db = redis.createClient();
 
-// Configuration
+var Socket = require('./lib/socket');
+var utils = require('./lib/utils');
 
-app.configure(function(){
-  app.use(express.bodyParser());
-  app.use(express.methodOverride());
-  app.use(app.router);
-  app.use(function(err, req, res, next){
-    if(err) {
-      res.json({ response: 'error', message: err.toString() }, 500)
+// 1. Check for config file
+var config;
+if (!fs.existsSync('./config.js')) {
+    // TODO start config setup
+    throw new Error('Config file not found');
+} else {
+    config  = require('./config'); // config file
+}
+
+// 2. Express server
+var app = express();
+
+app.use(express.json());
+
+// Require admin key middleware
+var requireAdmin = function(req, res, next) {
+    var key = req.get('key');
+
+    if (!key) {
+        res.json({ 'message': 'No key', 'status': 'ERROR' }, 400);
+        return false;
     }
-  });
+
+    // check against admin key
+    if (key !== config.admin_key) {
+        res.json({ 'message': 'Wrong key', 'status': 'ERROR' }, 401);
+        return false;
+    }
+
+    next();
+};
+
+// New message
+app.post('/message/:channel', function (req, res) {
+    var key = req.get('key');
+    var channel = req.params.channel;
+    var endpoint = '/' + channel;
+
+    if (!key) {
+        res.json({ 'message': 'No key', 'status': 'ERROR' }, 400);
+    } else {
+        // Check key
+        utils.authenticate(endpoint, key).then(function() {
+            // post message
+            db.publish(endpoint, JSON.stringify(req.body));
+            res.json({
+                'status': 'OK'
+            }, 200);
+        }, function(error) {
+            res.json({ 'message': 'Wrong key', 'status': 'ERROR' }, 401);
+        });
+    }
 });
 
-app.configure('development', function(){
-  app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
+// Get a list of all channels
+app.get('/channel', function (req, res) {
+    db.lrange('endpoints', 0, -1, function(err, list) {
+        res.json(list, 200);
+    });
 });
 
-app.configure('production', function(){
-  app.use(express.errorHandler());
+// Get channel info
+app.get('/channel/:channel', requireAdmin, function (req, res) {
+    var channel = req.params.channel;
+    var endpoint = '/' + channel;
+
+    db.hexists('keys', endpoint, function(err, check) {
+        if (!check) {
+            res.json({ 'message': 'Channel does not exist', 'status': 'ERROR' }, 400);
+            return false;
+        }
+
+        // get key
+        db.hget('keys', endpoint, function(err, channelKey) {
+            res.json({
+                'key': channelKey
+            }, 200);
+        });
+    });
 });
 
-// Routes
+// Create a new channel
+app.post('/channel', requireAdmin, function (req, res) {
+    // generate channel key
+    var channelKey = hat();
+    var channel = req.body.channel;
 
-app.get('/', routes.index);
-app.post('/newchannel', routes.newchannel);
-app.post('/newmessage', routes.newmessage);
+    if (!channel) {
+        res.json({ 'message': 'No channel name', 'status': 'ERROR' }, 400);
+        return false;
+    }
 
-sockets.run(app);
+    var endpoint = '/' + channel;
 
-app.listen(config.port);
-console.log("Express server listening on port %d in %s mode", app.address().port, app.settings.env);
+    // check if channel already exists
+    db.hexists('keys', endpoint, function(err, check) {
+        if (check) {
+            res.json({ 'message': 'Channel already exists', 'status': 'ERROR' }, 400);
+            return false;
+        }
+
+        // set channel key
+        db.hset('keys', endpoint, channelKey, function(err) {
+            // add channel to channel list
+            db.lpush('endpoints', endpoint, function(err) {
+                // publish new endpoint
+                db.publish('new-endpoint', JSON.stringify({
+                    'endpoint': endpoint,
+                    'key': channelKey
+                }));
+                res.json({
+                    'status': 'OK',
+                    'key': channelKey
+                }, 200);
+            });
+        });
+    });
+});
+
+// Delete channel
+app.delete('/channel/:channel', requireAdmin, function (req, res) {
+    var channel = req.params.channel;
+    var endpoint = '/' + channel;
+
+    // check if channel already exists
+    db.hexists('keys', endpoint, function(err, check) {
+        if (!check) {
+            res.json({ 'message': "Channel doesn't exist", 'status': 'ERROR' }, 400);
+            return false;
+        }
+
+        // remove channel key
+        db.hdel('keys', endpoint, function(err) {
+            // remove channel from channel list
+            db.lrem('endpoints', 0, endpoint, function(err) {
+                // publish removed endpoint
+                // TODO actual remove channel handlers
+                db.publish('removed-endpoint', JSON.stringify({
+                    'endpoint': endpoint
+                }));
+                res.json({
+                    'status': 'OK'
+                }, 200);
+            });
+        });
+    });
+});
+
+var server = http.createServer(app);
+
+console.log(' [*] Listening on 0.0.0.0:' + config.port);
+server.listen(config.port, '0.0.0.0');
+
+// 3. Create endpoints
+
+// Get all endpoints that have been setup
+db.lrange('endpoints', 0, -1, function(err, list) {
+    list.forEach(function(endpoint) {
+        // Get auth key for endpoint
+        db.hget('keys', endpoint, function(err, key) {
+            var sock = new Socket(endpoint, key);
+            sock.socket.installHandlers(server, { prefix: sock.prefix });
+        });
+    });
+});
+
+// listen to new endpoints
+var sub = redis.createClient();
+sub.subscribe('new-endpoint');
+
+sub.on('message', function(channel, message) {
+    var data = JSON.parse(message);
+
+    var sock = new Socket(data.endpoint, data.key);
+    sock.socket.installHandlers(server, { prefix: sock.prefix });
+});
