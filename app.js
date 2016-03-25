@@ -25,8 +25,8 @@ if (!fs.existsSync('./config.js')) {
 
 // 2. Express server
 var app = express();
-
-app.use(express.json());
+var bodyParser = require('body-parser');
+var jsonParser = bodyParser.json();
 
 // Require admin key middleware
 var requireAdmin = function(req, res, next) {
@@ -47,7 +47,7 @@ var requireAdmin = function(req, res, next) {
 };
 
 // New message
-app.post('/message/:channel', function (req, res) {
+app.post('/message/:channel', jsonParser, function (req, res) {
     var key = req.get('key');
     var channel = req.params.channel;
     var endpoint = '/' + channel;
@@ -69,14 +69,14 @@ app.post('/message/:channel', function (req, res) {
 });
 
 // Get a list of all channels
-app.get('/channel', function (req, res) {
+app.get('/channel', jsonParser, function (req, res) {
     db.lrange('endpoints', 0, -1, function(err, list) {
         res.json(list, 200);
     });
 });
 
 // Get channel info
-app.get('/channel/:channel', requireAdmin, function (req, res) {
+app.get('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
     var channel = req.params.channel;
     var endpoint = '/' + channel;
 
@@ -96,7 +96,7 @@ app.get('/channel/:channel', requireAdmin, function (req, res) {
 });
 
 // Create a new channel
-app.post('/channel', requireAdmin, function (req, res) {
+app.post('/channel', requireAdmin, jsonParser, function (req, res) {
     // generate channel key
     var channelKey = hat();
     var channel = req.body.channel;
@@ -134,7 +134,7 @@ app.post('/channel', requireAdmin, function (req, res) {
 });
 
 // Delete channel
-app.delete('/channel/:channel', requireAdmin, function (req, res) {
+app.delete('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
     var channel = req.params.channel;
     var endpoint = '/' + channel;
 
