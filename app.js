@@ -126,6 +126,13 @@ app.post('/channel', requireAdmin, jsonParser, function (req, res) {
         return false;
     }
 
+    var forbiddenChannels = ['message', 'channel', 'new-endpoint', 'removed-endpoint'];
+
+    if (forbiddenChannels.indexOf(channel) > -1) {
+        res.status(400).json({ 'message': 'This channel name is restricted and cannot be used', 'status': 'ERROR' });
+        return false;
+    }
+
     var endpoint = '/' + channel;
 
     // check if channel already exists
