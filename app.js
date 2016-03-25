@@ -190,3 +190,29 @@ sub.on('message', function(channel, message) {
     var sock = new Socket(data.endpoint, data.key);
     sock.socket.installHandlers(server, { prefix: sock.prefix });
 });
+
+// listen to deleted endpoints
+var sub2 = redis.createClient();
+sub2.subscribe('removed-endpoint');
+
+sub2.on('message', function(channel, message) {
+    var data = JSON.parse(message);
+
+    console.log('[*] Shutting down endpoint ' + data.endpoint);
+
+    deadEndpoint = function(req, res, extra) {
+        regexp = new RegExp('^' + data.endpoint  + '([/].+|[/]?)$');
+
+        if(req.url.match(regexp)) {
+            res.setHeader('content-type', 'text/html; charset=UTF-8');
+            res.writeHead(404);
+            res.end("Cannot GET "+data.endpoint+" ");
+            return true;
+        }
+
+        return false;
+    }
+
+    handle1 = utils.overshadowListeners(server, 'request', deadEndpoint);
+    handle2 = utils.overshadowListeners(server, 'upgrade', deadEndpoint);
+});
