@@ -171,13 +171,15 @@ server.listen(config.port, '0.0.0.0');
 
 // Get all endpoints that have been setup
 db.lrange('endpoints', 0, -1, function(err, list) {
-    list.forEach(function(endpoint) {
-        // Get auth key for endpoint
-        db.hget('keys', endpoint, function(err, key) {
-            var sock = new Socket(endpoint, key);
-            sock.socket.installHandlers(server, { prefix: sock.prefix });
+    if(!err) {
+        list.forEach(function(endpoint) {
+            // Get auth key for endpoint
+            db.hget('keys', endpoint, function(err, key) {
+                var sock = new Socket(endpoint, key);
+                sock.socket.installHandlers(server, { prefix: sock.prefix });
+            });
         });
-    });
+    }
 });
 
 // listen to new endpoints
@@ -216,3 +218,10 @@ sub2.on('message', function(channel, message) {
     handle1 = utils.overshadowListeners(server, 'request', deadEndpoint);
     handle2 = utils.overshadowListeners(server, 'upgrade', deadEndpoint);
 });
+
+process.on('uncaughtException', function(err) {
+    console.error('A fatal error has occured with Sprinker. Please fix this error and restart the service.', err);
+
+    process.exit(1);
+    return;
+})
