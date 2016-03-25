@@ -62,6 +62,8 @@ app.post('/message/:channel', jsonParser, function (req, res) {
             db.publish(endpoint, JSON.stringify(req.body));
             res.json({
                 'status': 'OK'
+                'status': 'OK',
+                'endpoint': endpoint,
             }, 200);
         }, function(error) {
             res.status(401).json({ 'message': 'Wrong key', 'status': 'ERROR' });
@@ -90,6 +92,7 @@ app.get('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
         // get key
         db.hget('keys', endpoint, function(err, channelKey) {
             res.status(200).json({
+                'endpoint': endpoint,
                 'key': channelKey
             });
         });
@@ -138,11 +141,11 @@ app.post('/channel', requireAdmin, jsonParser, function (req, res) {
             db.lpush('endpoints', endpoint, function(err) {
                 // publish new endpoint
                 db.publish('new-endpoint', JSON.stringify({
-                    'endpoint': endpoint,
-                    'key': channelKey
+                    'endpoint': endpoint
                 }));
                 res.status(200).json({
                     'status': 'OK',
+                    'endpoint': endpoint,
                     'key': channelKey
                 });
             });
@@ -172,7 +175,8 @@ app.delete('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
                     'endpoint': endpoint
                 }));
                 res.status(200).json({
-                    'status': 'OK'
+                    'status': 'OK',
+                    'endpoint': endpoint
                 });
             });
         });
