@@ -96,6 +96,22 @@ app.get('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
     });
 });
 
+// Generate a new channel key
+app.post('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
+    // generate channel key
+    var channelKey = hat();
+    var channel = req.params.channel;
+    var endpoint = '/' + channel;
+
+    db.hset('keys', endpoint, channelKey, function(err) {
+        res.status(200).json({
+            'status': 'OK',
+            'endpoint': endpoint,
+            'key': channelKey
+        });
+    });
+});
+
 // Create a new channel
 app.post('/channel', requireAdmin, jsonParser, function (req, res) {
     // generate channel key
