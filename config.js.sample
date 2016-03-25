@@ -1,6 +1,7 @@
 var config = {
     'admin_key': 'API_KEY', // admin key
     'port': 3000, // default port
+    'redisUrl': 'redis://127.0.0.1:6379/', // redis URL schema - [redis:]//[user][:password@][host][:port][/db-number][?db=db-number[&password=bar[&option=value]]]
 };
 
 module.exports = config;

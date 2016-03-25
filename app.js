@@ -9,7 +9,6 @@ var fs = require('fs');
 var hat = require('hat');
 
 var redis = require('redis');
-var db = redis.createClient();
 
 var Socket = require('./lib/socket');
 var utils = require('./lib/utils');
@@ -22,6 +21,8 @@ if (!fs.existsSync('./config.js')) {
 } else {
     config  = require('./config'); // config file
 }
+
+var db = redis.createClient(config.redisUrl);
 
 // 2. Express server
 var app = express();
