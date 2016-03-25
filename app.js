@@ -33,13 +33,13 @@ var requireAdmin = function(req, res, next) {
     var key = req.get('key');
 
     if (!key) {
-        res.json({ 'message': 'No key', 'status': 'ERROR' }, 400);
+        res.status(400).json({ 'message': 'No key', 'status': 'ERROR' });
         return false;
     }
 
     // check against admin key
     if (key !== config.admin_key) {
-        res.json({ 'message': 'Wrong key', 'status': 'ERROR' }, 401);
+        res.status(401).json({ 'message': 'Wrong key', 'status': 'ERROR' });
         return false;
     }
 
@@ -53,7 +53,7 @@ app.post('/message/:channel', jsonParser, function (req, res) {
     var endpoint = '/' + channel;
 
     if (!key) {
-        res.json({ 'message': 'No key', 'status': 'ERROR' }, 400);
+        res.status(400).json({ 'message': 'No key', 'status': 'ERROR' });
     } else {
         // Check key
         utils.authenticate(endpoint, key).then(function() {
@@ -63,7 +63,7 @@ app.post('/message/:channel', jsonParser, function (req, res) {
                 'status': 'OK'
             }, 200);
         }, function(error) {
-            res.json({ 'message': 'Wrong key', 'status': 'ERROR' }, 401);
+            res.status(401).json({ 'message': 'Wrong key', 'status': 'ERROR' });
         });
     }
 });
@@ -71,7 +71,7 @@ app.post('/message/:channel', jsonParser, function (req, res) {
 // Get a list of all channels
 app.get('/channel', jsonParser, function (req, res) {
     db.lrange('endpoints', 0, -1, function(err, list) {
-        res.json(list, 200);
+        res.status(200).json(list);
     });
 });
 
@@ -82,15 +82,15 @@ app.get('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
 
     db.hexists('keys', endpoint, function(err, check) {
         if (!check) {
-            res.json({ 'message': 'Channel does not exist', 'status': 'ERROR' }, 400);
+            res.status(400).json({ 'message': 'Channel does not exist', 'status': 'ERROR' });
             return false;
         }
 
         // get key
         db.hget('keys', endpoint, function(err, channelKey) {
-            res.json({
+            res.status(200).json({
                 'key': channelKey
-            }, 200);
+            });
         });
     });
 });
@@ -102,7 +102,7 @@ app.post('/channel', requireAdmin, jsonParser, function (req, res) {
     var channel = req.body.channel;
 
     if (!channel) {
-        res.json({ 'message': 'No channel name', 'status': 'ERROR' }, 400);
+        res.status(400).json({ 'message': 'No channel name', 'status': 'ERROR' });
         return false;
     }
 
@@ -111,7 +111,7 @@ app.post('/channel', requireAdmin, jsonParser, function (req, res) {
     // check if channel already exists
     db.hexists('keys', endpoint, function(err, check) {
         if (check) {
-            res.json({ 'message': 'Channel already exists', 'status': 'ERROR' }, 400);
+            res.status(400).json({ 'message': 'Channel already exists', 'status': 'ERROR' });
             return false;
         }
 
@@ -124,10 +124,10 @@ app.post('/channel', requireAdmin, jsonParser, function (req, res) {
                     'endpoint': endpoint,
                     'key': channelKey
                 }));
-                res.json({
+                res.status(200).json({
                     'status': 'OK',
                     'key': channelKey
-                }, 200);
+                });
             });
         });
     });
@@ -141,7 +141,7 @@ app.delete('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
     // check if channel already exists
     db.hexists('keys', endpoint, function(err, check) {
         if (!check) {
-            res.json({ 'message': "Channel doesn't exist", 'status': 'ERROR' }, 400);
+            res.status(400).json({ 'message': "Channel doesn't exist", 'status': 'ERROR' });
             return false;
         }
 
@@ -154,9 +154,9 @@ app.delete('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
                 db.publish('removed-endpoint', JSON.stringify({
                     'endpoint': endpoint
                 }));
-                res.json({
+                res.status(200).json({
                     'status': 'OK'
-                }, 200);
+                });
             });
         });
     });
