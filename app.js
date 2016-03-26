@@ -210,8 +210,8 @@ app.delete('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
 
 var server = http.createServer(app);
 
-console.log(' [*] Listening on 0.0.0.0:' + config.port);
-server.listen(config.port, '0.0.0.0');
+utils.log('Listening on ' + config.listen + ':' + config.port);
+server.listen(config.port, config.listen);
 
 // 3. Create endpoints
 
@@ -222,6 +222,9 @@ db.lrange('endpoints', 0, -1, function(err, list) {
             // Get auth key for endpoint
             db.hget('keys', endpoint, function(err, key) {
                 var sock = new Socket(endpoint, key, config.redisUrl);
+
+                utils.log('Restoring endpoint ' + endpoint);
+
                 sock.socket.installHandlers(server, { prefix: sock.prefix });
 
                 endpoints[sock.prefix.substring(1)] = sock;
