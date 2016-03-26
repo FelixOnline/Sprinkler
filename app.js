@@ -218,6 +218,11 @@ app.delete('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
     });
 });
 
+// Catch all
+app.use(function(req, res, next) {
+  res.status(404).json({'message': "This endpoint doesn't exist", 'status': 'ERROR'});
+});
+
 var server = http.createServer(app);
 
 utils.log('Listening on ' + config.listen + ':' + config.port);
