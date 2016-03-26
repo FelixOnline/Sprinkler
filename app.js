@@ -13,6 +13,9 @@ var redis = require('redis');
 var Socket = require('./lib/socket');
 var utils = require('./lib/utils');
 
+verInfo = utils.getVersion();
+utils.log('This is ' + verInfo.name + ' ' + verInfo.version);
+
 // 1. Check for config file
 var config;
 if (!fs.existsSync('./config.js')) {
@@ -46,6 +49,14 @@ var requireAdmin = function(req, res, next) {
 
     next();
 };
+
+// Get version
+app.get('/', jsonParser, function (req, res) {
+    ver = utils.getVersion();
+    ver.status = 'OK';
+
+    res.status(200).json(ver);
+});
 
 // New message
 app.post('/message/:channel', jsonParser, function (req, res) {
@@ -248,7 +259,7 @@ sub2.on('message', function(channel, message) {
 });
 
 process.on('uncaughtException', function(err) {
-    console.error('A fatal error has occured with Sprinker. Please fix this error and restart the service.', err);
+    console.error('A fatal error has occured with this service. Please fix this error and restart the service.', err);
 
     process.exit(1);
     return;
