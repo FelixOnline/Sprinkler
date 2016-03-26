@@ -26,6 +26,7 @@ if (!fs.existsSync('./config.js')) {
 }
 
 var db = redis.createClient(config.redisUrl);
+var endpoints = {};
 
 // 2. Express server
 var app = express();
@@ -71,11 +72,11 @@ app.post('/message/:channel', jsonParser, function (req, res) {
         utils.authenticate(endpoint, key).then(function() {
             // post message
             db.publish(endpoint, JSON.stringify(req.body));
-            res.json({
-                'status': 'OK'
+            res.status(200).json({
                 'status': 'OK',
-                'endpoint': endpoint,
-            }, 200);
+                'listeners': endpoints[endpoint.substring(1)].getConnections(),
+                'endpoint': endpoint
+            });
         }, function(error) {
             res.status(401).json({ 'message': 'Wrong key', 'status': 'ERROR' });
         });
@@ -104,7 +105,9 @@ app.get('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
         db.hget('keys', endpoint, function(err, channelKey) {
             res.status(200).json({
                 'endpoint': endpoint,
-                'key': channelKey
+                'key': channelKey,
+                'listeners': endpoints[endpoint.substring(1)].getConnections(),
+                'status': 'OK'
             });
         });
     });
@@ -134,6 +137,11 @@ app.post('/channel', requireAdmin, jsonParser, function (req, res) {
 
     if (!channel) {
         res.status(400).json({ 'message': 'No channel name', 'status': 'ERROR' });
+        return false;
+    }
+
+    if (! /^[a-zA-Z0-9]+$/.test(channel)) {
+        res.status(400).json({ 'message': 'Channel names must be alphanumeric', 'status': 'ERROR' });
         return false;
     }
 
@@ -188,7 +196,6 @@ app.delete('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
             // remove channel from channel list
             db.lrem('endpoints', 0, endpoint, function(err) {
                 // publish removed endpoint
-                // TODO actual remove channel handlers
                 db.publish('removed-endpoint', JSON.stringify({
                     'endpoint': endpoint
                 }));
@@ -214,8 +221,10 @@ db.lrange('endpoints', 0, -1, function(err, list) {
         list.forEach(function(endpoint) {
             // Get auth key for endpoint
             db.hget('keys', endpoint, function(err, key) {
-                var sock = new Socket(endpoint, key);
+                var sock = new Socket(endpoint, key, config.redisUrl);
                 sock.socket.installHandlers(server, { prefix: sock.prefix });
+
+                endpoints[sock.prefix.substring(1)] = sock;
             });
         });
     }
@@ -228,8 +237,10 @@ sub.subscribe('new-endpoint');
 sub.on('message', function(channel, message) {
     var data = JSON.parse(message);
 
-    var sock = new Socket(data.endpoint, data.key);
+    var sock = new Socket(data.endpoint, data.key, config.redisUrl);
     sock.socket.installHandlers(server, { prefix: sock.prefix });
+
+    endpoints[sock.prefix.substring(1)] = sock;
 });
 
 // listen to deleted endpoints
@@ -239,15 +250,17 @@ sub2.subscribe('removed-endpoint');
 sub2.on('message', function(channel, message) {
     var data = JSON.parse(message);
 
-    console.log('[*] Shutting down endpoint ' + data.endpoint);
+    utils.log('Shutting down endpoint ' + data.endpoint);
+
+    delete endpoints[data.endpoint.substring(1)];
 
     deadEndpoint = function(req, res, extra) {
         regexp = new RegExp('^' + data.endpoint  + '([/].+|[/]?)$');
 
         if(req.url.match(regexp)) {
-            res.setHeader('content-type', 'text/html; charset=UTF-8');
+            res.setHeader('content-type', 'application/json; charset=UTF-8');
             res.writeHead(404);
-            res.end("Cannot GET "+data.endpoint+" ");
+            res.end("{'message': \"This endpoint doesn't exist\", 'status': 'ERROR'}");
             return true;
         }
 
