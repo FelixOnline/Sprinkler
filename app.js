@@ -125,7 +125,7 @@ app.post('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
     var endpoint = '/' + channel;
 
     db.hset('keys', endpoint, channelKey, function(err) {
-        utils.log('Key reset for ' + data.endpoint + ' by ' + req.ip);
+        utils.log('Key reset for ' + endpoint + ' by ' + req.ip);
 
         res.status(200).json({
             'status': 'OK',
