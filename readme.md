@@ -13,16 +13,16 @@ A PHP client is also available: https://github.com/FelixOnline/Sprinkler-php
 ## Documentation:
 
 There are:
-* /message/:channel [POST] - Post a message to the specified channel. The message should be in JSON format. A header of "key" must be specified with the channel key
+* /message/:channel [POST] - Post a message to the specified channel. The message should be in JSON format. A header of "key" must be specified with the channel key. You will receive, in return, a JSON object which includes the current number of listeners in the field "listeners".
 * /channel [GET] - Lists all channels in JSON format
-* /channel/:channel [GET] - Obtain details on the specified channel, requires admin access. Will return a JSON object with fields "endpoint" (channel name) and "key" (channel key)
+* /channel/:channel [GET] - Obtain details on the specified channel, requires admin access. Will return a JSON object with fields "endpoint" (channel name), "listeners" (number of connected clients) and "key" (channel key)
 * /channel/:channel [POST] - Resets the channel key, requires admin access. Will return same response as the GET method (with a new key supplied)
 * /channel/:channel [DELETE] - Deletes the specified channel, requires admin access.
 * /channel [POST] - Creates a new channel, requires admin access. Pass as the request body a JSON object with the sole field "object". Will return a JSON object in the same format as the /channel/:channel [GET] method.
 
 Admin access endpoints requires a header of "key" set to the admin key (which is set in the config file).
 
-Endpoints will, on the whole, respond in JSON with a field of "status" set to OK or ERROR, but also beware of non-HTTP 200 responses where a server error may have occured. If an ERROR status is received there will also be a non-HTTP 200 response set.
+Endpoints will, on the whole, respond in JSON with a field of "status" set to OK or ERROR. If an ERROR status is received there will also be a non-HTTP 200 response set. The only time a non-JSON respons should be received is where the server has crashed.
 
 New channels will be notified on the prefix "new-endpoint", and deleted ones on "removed-endpoint".
 
