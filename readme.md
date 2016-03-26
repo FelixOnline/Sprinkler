@@ -13,7 +13,7 @@ A PHP client is also available: https://github.com/FelixOnline/Sprinkler-php
 ## Documentation:
 
 There are:
-* /message/:channel [POST] - Post a message to the specified channel. The message should be in JSON format. A header of "key" must be specified with the channel key. You will receive, in return, a JSON object which includes the current number of listeners in the field "listeners".
+* /message/:channel [POST] - Post a message to the specified channel. The message should be in JSON format. A header of "key" must be specified with the channel key or admin key. You will receive, in return, a JSON object which includes the current number of listeners in the field "listeners".
 * /channel [GET] - Lists all channels in JSON format
 * /channel/:channel [GET] - Obtain details on the specified channel, requires admin access. Will return a JSON object with fields "endpoint" (channel name), "listeners" (number of connected clients) and "key" (channel key)
 * /channel/:channel [POST] - Resets the channel key, requires admin access. Will return same response as the GET method (with a new key supplied)

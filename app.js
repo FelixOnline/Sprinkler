@@ -69,7 +69,7 @@ app.post('/message/:channel', jsonParser, function (req, res) {
         res.status(400).json({ 'message': 'No key', 'status': 'ERROR' });
     } else {
         // Check key
-        utils.authenticate(endpoint, key).then(function() {
+        utils.authenticate(endpoint, key, config.admin_key).then(function() {
             utils.log('Posted to ' + endpoint + ' by ' + req.ip);
 
             // post message
