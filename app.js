@@ -70,6 +70,8 @@ app.post('/message/:channel', jsonParser, function (req, res) {
     } else {
         // Check key
         utils.authenticate(endpoint, key).then(function() {
+            utils.log('Posted to ' + endpoint + ' by ' + req.ip);
+
             // post message
             db.publish(endpoint, JSON.stringify(req.body));
             res.status(200).json({
@@ -86,7 +88,7 @@ app.post('/message/:channel', jsonParser, function (req, res) {
 // Get a list of all channels
 app.get('/channel', jsonParser, function (req, res) {
     db.lrange('endpoints', 0, -1, function(err, list) {
-        res.status(200).json(list);
+        res.status(200).json({ "channels": list, "status": "OK" });
     });
 });
 
@@ -103,6 +105,8 @@ app.get('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
 
         // get key
         db.hget('keys', endpoint, function(err, channelKey) {
+            utils.log('Channel info request for ' + endpoint + ' by ' + req.ip);
+
             res.status(200).json({
                 'endpoint': endpoint,
                 'key': channelKey,
@@ -121,6 +125,8 @@ app.post('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
     var endpoint = '/' + channel;
 
     db.hset('keys', endpoint, channelKey, function(err) {
+        utils.log('Key reset for ' + data.endpoint + ' by ' + req.ip);
+
         res.status(200).json({
             'status': 'OK',
             'endpoint': endpoint,
@@ -165,6 +171,8 @@ app.post('/channel', requireAdmin, jsonParser, function (req, res) {
         db.hset('keys', endpoint, channelKey, function(err) {
             // add channel to channel list
             db.lpush('endpoints', endpoint, function(err) {
+                utils.log('New channel request for ' + endpoint + ' by ' + req.ip);
+
                 // publish new endpoint
                 db.publish('new-endpoint', JSON.stringify({
                     'endpoint': endpoint
@@ -196,6 +204,8 @@ app.delete('/channel/:channel', requireAdmin, jsonParser, function (req, res) {
             // remove channel from channel list
             db.lrem('endpoints', 0, endpoint, function(err) {
                 // publish removed endpoint
+                utils.log('Delete channel request for ' + endpoint + ' by ' + req.ip);
+
                 db.publish('removed-endpoint', JSON.stringify({
                     'endpoint': endpoint
                 }));
@@ -239,6 +249,8 @@ sub.subscribe('new-endpoint');
 
 sub.on('message', function(channel, message) {
     var data = JSON.parse(message);
+
+    utils.log('Creating endpoint ' + data.endpoint);
 
     var sock = new Socket(data.endpoint, data.key, config.redisUrl);
     sock.socket.installHandlers(server, { prefix: sock.prefix });
