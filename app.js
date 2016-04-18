@@ -272,6 +272,8 @@ sub2.on('message', function(channel, message) {
 
     utils.log('Shutting down endpoint ' + data.endpoint);
 
+    endpoints[data.endpoint.substring(1)].shutDown();
+
     delete endpoints[data.endpoint.substring(1)];
 
     deadEndpoint = function(req, res, extra) {
